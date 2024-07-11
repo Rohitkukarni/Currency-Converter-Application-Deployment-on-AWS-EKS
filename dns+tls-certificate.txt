@@ -1,0 +1,112 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+----------------
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: cert
+spec:
+  secretName: tls-cert
+  dnsNames:
+    - www.krishnakulkarni.online
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+
+-------------------------
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: rohitkulkarni0735@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-prod
+    solvers:
+    - http01:
+        ingress:
+          class: nginx
+-----------------------------
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: example-ingress
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  tls:
+  - hosts:
+    - www.krishnakulkarni.online
+    secretName: tls-cert
+  ingressClassName: nginx
+  rules:
+  - host: www.krishnakulkarni.online
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: my-service
+            port:
+              number: 8080
+----------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-dep
+  labels:
+    app: my-app
+spec:
+  replicas: 6
+  selector:
+    matchLabels:
+      app: my-app
+  template:
+    metadata:
+      labels:
+        app: my-app
+    spec:
+      containers:
+      - name: my-container
+        image:  krishna112/currency_converter
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  labels:
+    app: my-app
+spec:
+  type: NodePort
+  selector:
+    app: my-app
+  ports:
+    - port: 80
+      targetPort: 8080
+------------------
